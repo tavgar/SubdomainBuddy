@@ -1,18 +1,9 @@
 import requests
 import subprocess
 import argparse
+import concurrent.futures
 
-parser = argparse.ArgumentParser(description='Check for subdomain takeover')
-parser.add_argument('--file', dest='file', help='The file containing a list of subdomains', required=False)
-args = parser.parse_args()
-
-# Read the file of subdomains
-subdomains_file = args.file
-with open(subdomains_file, "r") as file:
-    subdomains = file.readlines()
-
-# Check for 404 errors and perform nslookup for each subdomain
-for subdomain in subdomains:
+def check_subdomain(subdomain):
     subdomain = subdomain.strip()  # Remove any trailing whitespace
 
     # Determine whether the URL should be http or https
@@ -41,3 +32,22 @@ for subdomain in subdomains:
             print(f"nslookup for {subdomain}: {output.decode('utf-8').strip()}")
 
     print("-" * 50)  # Print a line between each subdomain
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Check for subdomain takeover')
+    parser.add_argument('--file', dest='file', help='The file containing a list of subdomains', required=False)
+    parser.add_argument('--thready', dest='thready', help='Use threading instead of multiprocessing', action='store_true', required=False)
+    args = parser.parse_args()
+
+    # Read the file of subdomains
+    subdomains_file = args.file
+    with open(subdomains_file, "r") as file:
+        subdomains = file.readlines()
+
+    # Create a concurrent executor to execute the subdomain checks in parallel
+    if args.thready:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(check_subdomain, subdomains)
+    else:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            executor.map(check_subdomain, subdomains)
