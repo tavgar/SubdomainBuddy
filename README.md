@@ -5,7 +5,7 @@ Subdomain Buddy is a Python script that checks a list of subdomains for potentia
 ## Usage
 
 Subdomain Buddy requires a file containing a list of subdomains to check. You can provide the path to the file using the `--file` parameter. If the parameter is not provided, the script will prompt you to enter the path to the file.
-You chab use `--thready` to make it faster otherwise with a medium scope take a nap.
+You can use `--thready` to make it faster otherwise with a medium scope take a nap.
 To run Subdomain Buddy, use the following command:
 
 python subdomainBuddy.py --file subdomains.txt --thready
