@@ -29,7 +29,7 @@ def nslookup(subdomain):
     # Return the DNS records
     return records
 
-def check_subdomain(subdomain, thread=True):
+def check_subdomain(subdomain):
     subdomain = subdomain.strip()
 
     # Determine whether the URL should be http or https
@@ -74,8 +74,7 @@ def check_subdomain(subdomain, thread=True):
     except:
         print(f"Unable to connect to {url}")
 
-    if not thread:
-        print("_" * 50)
+    print("_" * 50)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
@@ -87,7 +86,6 @@ if __name__ == '__main__':
     subdomains_file = args.file
     with open(subdomains_file, "r") as file:
         subdomains = file.readlines()
-        print("_"*50)
 
     if args.thready:
         # Define a function to process each batch of subdomains with a thread
