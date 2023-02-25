@@ -50,14 +50,14 @@ if __name__ == '__main__':
         print("_"*50)
     # Create a concurrent executor to execute the subdomain checks in parallel
     if args.thready:
-    threads = []
-    for subdomain in subdomains:
-        t = threading.Thread(target=check_subdomain, args=(subdomain,))
-        t.start()
-        threads.append(t)
-
-    for t in threads:
-        t.join()
-    else:
+        threads = []
         for subdomain in subdomains:
-            check_subdomain(subdomains, Thread=False)
+            t = threading.Thread(target=check_subdomain, args=(subdomain,))
+            t.start()
+            threads.append(t)
+
+        for t in threads:
+            t.join()
+        else:
+            for subdomain in subdomains:
+                check_subdomain(subdomains, Thread=False)
