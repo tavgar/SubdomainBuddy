@@ -73,6 +73,7 @@ def check_subdomain(subdomain):
             print(f"Response code for {subdomain}: {response.status_code}")
     except:
         print(f"Unable to connect to {url}")
+    print("_" * 50)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
@@ -90,7 +91,6 @@ if __name__ == '__main__':
         def threaded_check_subdomains(subdomains):
                 for subdomain in subdomains:
                     check_subdomain(subdomain.strip())
-                    print("_" * 50)
         # Divide subdomains into batches of 10 and process each batch with a thread
         with concurrent.futures.ThreadPoolExecutor() as executor:
             batch_size = 10
