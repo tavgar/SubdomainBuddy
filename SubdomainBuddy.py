@@ -15,28 +15,43 @@ def check_subdomain(subdomain, Thread=True):
     except:
         url = f"https://{subdomain}"
 
-    # Perform a DNS lookup for the subdomain
-    try:
-        answers = dns.resolver.resolve(subdomain)
-        for rdata in answers:
-            if isinstance(rdata, dns.rdtypes.ANY.CNAME):
-                print(f"CNAME record found for {subdomain}: {rdata.target}")
-            else:
-                print(f"DNS resolution for {subdomain}: {rdata}")
-    except:
-        print(f"Unable to perform DNS resolution for {subdomain}")
-
     # Make the request to the determined URL
     try:
         response = requests.get(url)
-        if response.status_code == 404:
+        if response.status_code < 200 or response.status_code > 399:
+            # Perform a DNS lookup for the subdomain if the HTTP response code is not in the range of 200 to 399
+            try:
+                answers = dns.resolver.resolve(subdomain)
+                for rdata in answers:
+                    if isinstance(rdata, dns.rdtypes.ANY.CNAME):
+                        print(f"CNAME record found for {subdomain}: {rdata.target}")
+                    else:
+                        print(f"DNS resolution for {subdomain}: {rdata}")
+            except:
+                print(f"Unable to perform DNS resolution for {subdomain}")
+
+            print(f"Response code for {subdomain}: {response.status_code}")
+        elif response.status_code == 404:
             print(f"404 error found for {subdomain}")
         else:
             print(f"Response code for {subdomain}: {response.status_code}")
     except:
+        # Perform a DNS lookup for the subdomain if the HTTP request failed
+        try:
+            answers = dns.resolver.resolve(subdomain)
+            for rdata in answers:
+                if isinstance(rdata, dns.rdtypes.ANY.CNAME):
+                    print(f"CNAME record found for {subdomain}: {rdata.target}")
+                else:
+                    print(f"DNS resolution for {subdomain}: {rdata}")
+        except:
+            print(f"Unable to perform DNS resolution for {subdomain}")
+
         print(f"Unable to connect to {url}")
+
     if(Thread == False):
-       print("_"*50)
+        print("_"*50)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
     parser.add_argument('--file', dest='file', help='The file containing a list of subdomains', required=False)
@@ -48,6 +63,7 @@ if __name__ == '__main__':
     with open(subdomains_file, "r") as file:
         subdomains = file.readlines()
         print("_"*50)
+
     # Create a concurrent executor to execute the subdomain checks in parallel
     if args.thready:
         threads = []
@@ -58,6 +74,6 @@ if __name__ == '__main__':
 
         for t in threads:
             t.join()
-        else:
-            for subdomain in subdomains:
-                check_subdomain(subdomains, Thread=False)
+    else:
+        for subdomain in subdomains:
+            check_subdomain(subdomain, Thread=False)
