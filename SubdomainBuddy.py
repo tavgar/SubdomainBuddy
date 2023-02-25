@@ -1,7 +1,7 @@
 import requests
-import subprocess
 import argparse
 import concurrent.futures
+import dns.resolver
 
 def check_subdomain(subdomain):
     subdomain = subdomain.strip()  # Remove any trailing whitespace
@@ -15,21 +15,22 @@ def check_subdomain(subdomain):
     except:
         url = f"https://{subdomain}"
 
+    # Perform a DNS lookup for the subdomain
+    try:
+        answers = dns.resolver.resolve(subdomain)
+        print(f"DNS resolution for {subdomain}: {[str(rdata) for rdata in answers]}")
+    except:
+        print(f"Unable to perform DNS resolution for {subdomain}")
+
     # Make the request to the determined URL
-    output = subprocess.check_output(["nslookup", subdomain])
     try:
         response = requests.get(url)
         if response.status_code == 404:
             print(f"404 error found for {subdomain}")
-            try:
-                output = subprocess.check_output(["nslookup", subdomain])
-                print(f"nslookup for {subdomain}: {output.decode('utf-8').strip()}")
-            except subprocess.CalledProcessError:
-                print(f"Unable to perform nslookup for {subdomain}")
         else:
             print(f"Response code for {subdomain}: {response.status_code}")
     except:
-            print(f"nslookup for {subdomain}: {output.decode('utf-8').strip()}")
+        print(f"Unable to connect to {url}")
 
     print("-" * 50)  # Print a line between each subdomain
 
