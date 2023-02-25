@@ -19,6 +19,7 @@ Subdomain Buddy requires the following packages:
 
 - requests
 - argparse
+- dnspython
 
 You can install these packages using pip:
 
