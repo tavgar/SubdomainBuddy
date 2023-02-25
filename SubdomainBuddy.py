@@ -74,8 +74,6 @@ def check_subdomain(subdomain):
     except:
         print(f"Unable to connect to {url}")
 
-    print("_" * 50)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
     parser.add_argument('--file', dest='file', help='The file containing a list of subdomains', required=False)
@@ -87,17 +85,17 @@ if __name__ == '__main__':
     with open(subdomains_file, "r") as file:
         subdomains = file.readlines()
 
-    if args.thready:
         # Define a function to process each batch of subdomains with a thread
+    if args.thready:
         def threaded_check_subdomains(subdomains):
-            for subdomain in subdomains:
-                check_subdomain(subdomain.strip(), thread=True)
-
+                for subdomain in subdomains:
+                    check_subdomain(subdomain.strip())
+                    print("_" * 50)
         # Divide subdomains into batches of 10 and process each batch with a thread
         with concurrent.futures.ThreadPoolExecutor() as executor:
             batch_size = 10
             batches = [subdomains[i:i + batch_size] for i in range(0, len(subdomains), batch_size)]
             results = executor.map(threaded_check_subdomains, batches)
-     else:
-            for subdomain in subdomains:
+    else:
+        for subdomain in subdomains:
                 check_subdomain(subdomain)
