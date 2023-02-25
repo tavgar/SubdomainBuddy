@@ -5,50 +5,77 @@ import dns.resolver
 import threading
 import time
 
-def check_subdomain(subdomain, Thread=True):
-    subdomain = subdomain.strip()  # Remove any trailing whitespace
+import subprocess
+
+def nslookup(subdomain):
+    # Call the nslookup command to perform a DNS lookup for the subdomain
+    process = subprocess.Popen(['nslookup', subdomain], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = process.communicate()
+
+    # Check if the nslookup command returned an error
+    if error:
+        print(f"Error running nslookup for {subdomain}: {error.decode()}")
+        return []
+
+    # Parse the output of the nslookup command to get the DNS records
+    lines = output.decode().split('\n')
+    records = []
+    for line in lines:
+        if line.startswith('Name:'):
+            records.append(line.strip().replace('Name:', ''))
+        elif line.startswith('Address:'):
+            records.append(line.strip().replace('Address:', ''))
+
+    # Return the DNS records
+    return records
+
+def check_subdomain(subdomain, thread=True):
+    subdomain = subdomain.strip()
 
     # Determine whether the URL should be http or https
     url = f"http://{subdomain}"
     try:
         response = requests.head(url)
-        if response.status_code == 405:  # Method Not Allowed error
+        if response.status_code == 405:
             url = f"https://{subdomain}"
     except:
         url = f"https://{subdomain}"
+
+    # Perform a DNS lookup for the subdomain
+    try:
+        answers = dns.resolver.resolve(subdomain)
+        for rdata in answers:
+            if isinstance(rdata, dns.rdtypes.ANY.CNAME):
+                print(f"CNAME record found for {subdomain}: {rdata.target}")
+            else:
+                print(f"DNS resolution for {subdomain}: {rdata}")
+    except:
+        print(f"No DNS resolution found for {subdomain}")
+        answers = nslookup(subdomain)
+        if len(answers) > 0:
+            for record in answers:
+                print(f"NS lookup for {subdomain}: {record}")
+        else:
+            print(f"No NS lookup found for {subdomain}")
 
     # Make the request to the determined URL
     try:
         response = requests.get(url)
         if response.status_code == 404:
             print(f"404 error found for {subdomain}")
-            # Perform a DNS lookup for the subdomain
-            try:
-                answers = dns.resolver.resolve(subdomain)
-                for rdata in answers:
-                    if isinstance(rdata, dns.rdtypes.ANY.CNAME):
-                        print(f"CNAME record found for {subdomain}: {rdata.target}")
-                    else:
-                        print(f"DNS resolution for {subdomain}: {rdata}")
-            except:
-                print(f"Unable to perform DNS resolution for {subdomain}")
+            answers = nslookup(subdomain)
+            if len(answers) > 0:
+                for record in answers:
+                    print(f"NS lookup for {subdomain}: {record}")
+            else:
+                print(f"No NS lookup found for {subdomain}")
         else:
             print(f"Response code for {subdomain}: {response.status_code}")
     except:
         print(f"Unable to connect to {url}")
 
-    if(Thread == False):
-       print("_"*50)
-def threaded_check_subdomains(subdomains):
-    threads = []
-    for subdomain in subdomains:
-        t = threading.Thread(target=check_subdomain, args=(subdomain,))
-        t.start()
-        threads.append(t)
-        time.sleep(1) # Add a 1-second delay between requests to avoid overwhelming the server
-
-    for t in threads:
-        t.join()
+    if not thread:
+        print("_" * 50)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
