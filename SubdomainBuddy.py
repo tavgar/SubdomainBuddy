@@ -2,6 +2,8 @@ import requests
 import argparse
 import concurrent.futures
 import dns.resolver
+import threading
+import time
 
 def check_subdomain(subdomain, Thread=True):
     subdomain = subdomain.strip()  # Remove any trailing whitespace
@@ -15,30 +17,39 @@ def check_subdomain(subdomain, Thread=True):
     except:
         url = f"https://{subdomain}"
 
-    # Perform a DNS lookup for the subdomain
-    try:
-        answers = dns.resolver.resolve(subdomain)
-        for rdata in answers:
-            if isinstance(rdata, dns.rdtypes.ANY.CNAME):
-                print(f"CNAME record found for {subdomain}: {rdata.target}")
-            else:
-                print(f"DNS resolution for {subdomain}: {rdata}")
-    except:
-        print(f"Unable to perform DNS resolution for {subdomain}")
-
     # Make the request to the determined URL
     try:
         response = requests.get(url)
         if response.status_code == 404:
-            print(f"Potential subdomain takeover for {subdomain}")
+            print(f"404 error found for {subdomain}")
+            # Perform a DNS lookup for the subdomain
+            try:
+                answers = dns.resolver.resolve(subdomain)
+                for rdata in answers:
+                    if isinstance(rdata, dns.rdtypes.ANY.CNAME):
+                        print(f"CNAME record found for {subdomain}: {rdata.target}")
+                    else:
+                        print(f"DNS resolution for {subdomain}: {rdata}")
+            except:
+                print(f"Unable to perform DNS resolution for {subdomain}")
         else:
             print(f"Response code for {subdomain}: {response.status_code}")
     except:
         print(f"Unable to connect to {url}")
-        
+
     if(Thread == False):
-        print("_"*50)
-        
+       print("_"*50)
+def threaded_check_subdomains(subdomains):
+    threads = []
+    for subdomain in subdomains:
+        t = threading.Thread(target=check_subdomain, args=(subdomain,))
+        t.start()
+        threads.append(t)
+        time.sleep(1) # Add a 1-second delay between requests to avoid overwhelming the server
+
+    for t in threads:
+        t.join()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Check for subdomain takeover')
     parser.add_argument('--file', dest='file', help='The file containing a list of subdomains', required=False)
@@ -50,17 +61,13 @@ if __name__ == '__main__':
     with open(subdomains_file, "r") as file:
         subdomains = file.readlines()
         print("_"*50)
-        
-    # Create a concurrent executor to execute the subdomain checks in parallel
-    if args.thready:
-        threads = []
-        for subdomain in subdomains:
-            t = threading.Thread(target=check_subdomain, args=(subdomain,))
-            t.start()
-            threads.append(t)
 
-        for t in threads:
-            t.join()
+    if args.thready:
+        # Divide subdomains into batches of 10 and process each batch with a thread
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            batch_size = 10
+            batches = [subdomains[i:i + batch_size] for i in range(0, len(subdomains), batch_size)]
+            results = executor.map(threaded_check_subdomains, batches)
     else:
         for subdomain in subdomains:
-            check_subdomain(subdomain, Thread=False)
+            check_subdomain(subdomain)
