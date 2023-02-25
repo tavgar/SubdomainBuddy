@@ -90,16 +90,16 @@ if __name__ == '__main__':
         print("_"*50)
 
     if args.thready:
-    # Define a function to process each batch of subdomains with a thread
-    def threaded_check_subdomains(subdomains):
-        for subdomain in subdomains:
-            check_subdomain(subdomain.strip(), thread=True)
+        # Define a function to process each batch of subdomains with a thread
+        def threaded_check_subdomains(subdomains):
+            for subdomain in subdomains:
+                check_subdomain(subdomain.strip(), thread=True)
 
-    # Divide subdomains into batches of 10 and process each batch with a thread
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        batch_size = 10
-        batches = [subdomains[i:i + batch_size] for i in range(0, len(subdomains), batch_size)]
-        results = executor.map(threaded_check_subdomains, batches)
-else:
-    for subdomain in subdomains:
-        check_subdomain(subdomain)
+        # Divide subdomains into batches of 10 and process each batch with a thread
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            batch_size = 10
+            batches = [subdomains[i:i + batch_size] for i in range(0, len(subdomains), batch_size)]
+            results = executor.map(threaded_check_subdomains, batches)
+     else:
+            for subdomain in subdomains:
+                check_subdomain(subdomain)
